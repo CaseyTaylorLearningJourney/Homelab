@@ -116,10 +116,15 @@ My homelab features **enterprise-grade and business-class gear** built for real-
 - Validate new security tools for containers, VMs, and hybrid infrastructure
 - Document and share lessons (success _and_ failure) openly
 
-## Get in Touch
+## 📬 Get in Touch
 
-Exploring DevSecOps, DevOps, cloud platforms, or enterprise security automation?  
-Connect with me on LinkedIn!
+Interested in DevSecOps, Kubernetes, automation, networking, or enterprise infrastructure?  
+Let's connect, share ideas, and collaborate!
+
+- 💼 LinkedIn: [www.linkedin.com/in/cltaylor0](https://www.linkedin.com/in/cltaylor0)
+- 🖥️ GitHub: [CaseyTaylorLearningJourney/Homelab](https://github.com/CaseyTaylorLearningJourney/Homelab)
+
+I'm always open to professional connections, knowledge-sharing, and feedback—reach out anytime!
 
 ---
 
