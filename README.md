@@ -81,11 +81,12 @@ My homelab features **enterprise-grade and business-class gear** built for real-
 ### Networking
 
 - **Primary Site**
+  - Software Controller running on LXC Container
   - Omada ER8411 Router: 15 VLANs, all with strict traffic rules
   - Omada SX3008F Switch: server connectivity
 
 - **Secondary Site**
-  - Unifi UDM Pro: 16 VLANs, strictly locked down by traffic rules
+  - Unifi UDM Pro: 16 VLANs, strictly locked down by traffic rules (Manages Unifi Equipment)
   - Unifi US XG16 & USW Pro Aggregation: aggregation switches for connectivity and failover
 
 ### Storage
