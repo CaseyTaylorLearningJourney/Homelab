@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: omada-controller-data
+  namespace: default # This is a very generic namespace just for reference, I already have multiple namespaces built and in mind for the various different pods/services.
+spec:
+  accessModes:
+    - ReadWriteOnce # I'm not currently looking at replication so I chose this to start with instead of ReadWriteMany
+  storageClassName: standard # There's standard, longhorn & ceph-rbd. I'm choosing standard to begin with as i'm going to destroy this multiple times before I chose my final storageclass 
+   #which will more than likely be ceph
+  resources:
+    requests:
+      storage: 20Gi #Chose this based on current utilization and future expansion. I may just shift alot of the audit logging off to another host so this may get reduced in future builds
