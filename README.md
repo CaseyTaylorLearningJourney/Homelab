@@ -82,7 +82,7 @@ My homelab features **enterprise-grade and business-class gear** built for real-
 
 - **Primary Site**
   - Software Controller running on LXC Container
-  - Omada ER8411 Router: 15 VLANs, all with strict traffic rules
+  - Omada ER8411 Router: 16 VLANs, all with strict traffic rules (This is actually brand new. I jumped the gun on adding this to my hardware list. Previous Router was a ER7206, still functional just.... Well 10G, need I say more?)
   - Omada SX3008F Switch: server connectivity
 
 - **Secondary Site**
