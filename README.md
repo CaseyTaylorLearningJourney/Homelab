@@ -59,6 +59,10 @@ My homelab features **enterprise-grade and business-class gear** built for real-
   Intel Core i5-13600T | 64GB RAM | 2×256GB SSD (system)  
   Connected via NFS to storage pool on Z840
 
+- **HP Pro Mini 600 G5 Desktop PC **
+  Intel Core i5-9600T | 24GB RAM | 1x 256GB SSD 
+(Witness for 3 node Proxmox Quorum)
+
 - **HP Z840 Workstation**  
   2× Intel Xeon E5-2697 v4 | 256GB RAM  
   4× 250GB SSD (OS, RAID)  
