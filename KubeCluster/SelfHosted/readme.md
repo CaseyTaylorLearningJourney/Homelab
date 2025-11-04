@@ -1,0 +1,1 @@
+Generating folder structure for Self Hosted Applications

@@ -1,0 +1,22 @@
+name: Validate YAML
+
+# This action will run on any Pull Request
+# that targets your 'main' or 'staging' branches
+on:
+  pull_request:
+    branches: [ main, staging ]
+
+jobs:
+  lint:
+    name: Run YAML Linter  # <-- This name is what the ruleset will look for
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run yamllint
+        uses: "docker://ghcr.io/action-check/yamllint:latest"
+        with:
+          yamllint_config_filepath: .yamllint.yml
+          yamllint_strict: false
+          yamllint_comment: true
