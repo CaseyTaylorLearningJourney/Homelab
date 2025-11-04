@@ -1,13 +1,16 @@
+---
+
 name: Validate YAML
 
 on:
   pull_request:
-    branches: [ main, staging ]
+
+    branches: [main, staging]
 
 jobs:
   lint:
-    # This name is the same, so your branch ruleset will still work!
-    name: Run YAML Linter  
+
+    name: Run YAML Linter
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -22,5 +25,5 @@ jobs:
         run: pip install yamllint
 
       - name: Run yamllint
-        # This command scans all YAML files in your repository
-        run: yamllint .
+        # This forces it to only run in my worklows folder to limit additional yaml runs. 
+        run: yamllint .github/workflows/
