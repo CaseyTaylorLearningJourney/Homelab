@@ -1,0 +1,10 @@
+---
+# This file configures yamllint
+extends: default
+
+rules:
+  # Allow 'on' as a valid value for GitHub Actions files
+  # This fixes the 'truthy' false positive
+  truthy:
+    allowed-values: ['true', 'false', 'on']
+    
