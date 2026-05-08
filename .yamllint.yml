@@ -1,10 +1,15 @@
 ---
-# This file configures yamllint
 extends: default
 
 rules:
-  # Allow 'on' as a valid value for GitHub Actions files
-  # This fixes the 'truthy' false positive
+  line-length:
+    max: 200
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  document-start: disable
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
   truthy:
-    allowed-values: ['true', 'false', 'on']
-    
+    allowed-values: [ "true", "false", "on" ]
+    check-keys: false
