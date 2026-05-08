@@ -21,7 +21,9 @@ spec:
         fsGroup: 1000
       containers:
         - name: fleet-manager
-          image: forgejo.lab.local/casey/digimon-fleet:v1
+          # TODO: Switch back to forgejo.lab.local/casey/digimon-fleet:v1
+          # once Talos nodes are configured to trust the self-signed cert
+          image: ttl.sh/casey-digimon-fleet-v1:24h
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
