@@ -1,0 +1,19 @@
+# Secrets - never commit plaintext keys
+age.key
+*.dec.yaml
+
+# Talos secrets
+talos/secrets.yaml
+
+# OS junk
+.DS_Store
+._*
+
+# Talos cluster configs (contain secrets/certs)
+kubeconfig
+config.yaml
+newcontrolplane.yaml
+newworker.yaml
+etcd-raw-backup
+test.yaml
+longhorn-patch.yaml

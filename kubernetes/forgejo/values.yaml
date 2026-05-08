@@ -1,0 +1,53 @@
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: selfsigned-issuer
+  hosts:
+    - host: forgejo.lab.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: forgejo-tls
+      hosts:
+        - forgejo.lab.local
+
+persistence:
+  enabled: true
+  size: 20Gi
+
+gitea:
+  config:
+    server:
+      DOMAIN: forgejo.lab.local
+      ROOT_URL: https://forgejo.lab.local/
+      SSH_DOMAIN: forgejo.lab.local
+    service:
+      DISABLE_REGISTRATION: true
+    actions:
+      ENABLED: true
+    repository:
+      DEFAULT_BRANCH: main
+
+  admin:
+    username: casey
+    email: casey@lab.local
+
+postgresql-ha:
+  enabled: false
+
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      size: 5Gi
+
+redis-cluster:
+  enabled: false
+
+redis:
+  enabled: true
+  master:
+    persistence:
+      size: 2Gi

@@ -1,0 +1,45 @@
+---
+name: Sync Branches
+
+# This action triggers when a Pull Request
+# targeting 'main' is closed and merged
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  # Job to sync 'main' back to 'staging'
+  sync-staging:
+    name: ➡️ Sync main to staging
+    runs-on: ubuntu-latest
+
+    # We only run if the PR was actually merged
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Create Pull Request
+        # This is a pre-built action that does all the work
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: 'main'
+          destination_branch: 'staging'
+          pr_title: '🤖 Sync: main -> staging'
+          pr_body: 'This PR is auto-generated to sync main with staging.'
+          # This uses the built-in token
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job to sync 'main' back to 'development'
+  sync-development:
+    name: ➡️ Sync main to development
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: 'main'
+          destination_branch: 'development'
+          pr_title: '🤖 Sync: main -> development'
+          pr_body: 'This PR is auto-generated to sync main with development.'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
