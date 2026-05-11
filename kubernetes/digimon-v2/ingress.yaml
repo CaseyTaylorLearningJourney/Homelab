@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: digimon-fleet-v2-ingress
+  namespace: digimon
+  annotations:
+    cert-manager.io/cluster-issuer: selfsigned-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - digimon-v2.lab.local
+      secretName: digimon-fleet-v2-tls
+  rules:
+    - host: digimon-v2.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: digimon-fleet-v2-service
+                port:
+                  number: 80

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab
+  namespace: argocd
+spec:
+  description: Lab infrastructure project — all GitOps-managed cluster services
+
+  # Only allow manifests from the local Forgejo repo
+  sourceRepos:
+    - https://forgejo.lab.local/casey/gitops-infra.git
+
+  # Allow deployments to any namespace on the local cluster
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+
+  # Allow all resource kinds (can be tightened later)
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

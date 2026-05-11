@@ -1,0 +1,26 @@
+replicaCount: 1
+
+runner:
+  config: |
+    log:
+      level: info
+    runner:
+      labels:
+        - "ubuntu-latest:docker://node:20-bookworm"
+        - "self-hosted:host"
+      capacity: 2
+      timeout: 3h
+
+  extraEnvs:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2376
+
+dind:
+  enabled: true
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi

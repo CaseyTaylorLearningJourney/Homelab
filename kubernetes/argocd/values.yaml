@@ -1,0 +1,169 @@
+# Argo CD Helm values — argo/argo-cd chart v9.5.12 (Argo CD v3.3.9)
+# Namespace: argocd
+# Ingress: argocd.lab.local via NGINX Ingress + cert-manager self-signed TLS
+
+global:
+  domain: argocd.lab.local
+
+# ---------- Server ----------
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned-issuer
+      nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    tls: true
+    extraTls:
+      - secretName: argocd-server-tls
+        hosts:
+          - argocd.lab.local
+
+# ---------- Configs ----------
+configs:
+  params:
+    # Let NGINX Ingress handle TLS termination; server runs plain HTTP
+    server.insecure: true
+
+  cm:
+    # Admin user enabled for initial setup
+    admin.enabled: true
+    # URL shown in the UI
+    url: https://argocd.lab.local
+    # Allow helm-secrets value file schemes for SOPS decryption
+    helm.valuesFileSchemes: >-
+      secrets+gpg-import, secrets+gpg-import-kubernetes,
+      secrets+age-import, secrets+age-import-kubernetes,
+      secrets, secrets+literal, https
+
+  # SOPS custom management plugin — decrypts raw *.enc.yaml manifests
+  cmp:
+    create: true
+    plugins:
+      sops:
+        allowConcurrency: true
+        discover:
+          fileName: "*.enc.yaml"
+        generate:
+          command: ["sh", "-c"]
+          args:
+            - |
+              for f in *.enc.yaml; do
+                /custom-tools/sops --decrypt "$f"
+                echo "---"
+              done
+        lockRepo: false
+
+  repositories:
+    forgejo-gitops:
+      url: https://forgejo.lab.local/casey/gitops-infra.git
+      name: gitops-infra
+      type: git
+      insecure: "true"           # skip TLS verify for self-signed cert
+
+# ---------- Repo Server (SOPS + helm-secrets) ----------
+repoServer:
+  env:
+    - name: SOPS_AGE_KEY_FILE
+      value: /usr/local/share/sops/age/keys.txt
+    - name: HELM_PLUGINS
+      value: /custom-tools/helm-plugins/
+    - name: HELM_SECRETS_SOPS_PATH
+      value: /custom-tools/sops
+    - name: HELM_SECRETS_BACKEND
+      value: sops
+    - name: HELM_SECRETS_VALUES_ALLOW_SYMLINKS
+      value: "false"
+    - name: HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH
+      value: "true"
+    - name: HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL
+      value: "false"
+
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+    - name: sops-age-key
+      secret:
+        secretName: sops-age-key
+    - name: cmp-plugin
+      configMap:
+        name: argocd-cmp-cm
+        items:
+          - key: sops.yaml
+            path: plugin.yaml
+    - name: cmp-tmp
+      emptyDir: {}
+
+  volumeMounts:
+    - name: custom-tools
+      mountPath: /custom-tools
+    - name: sops-age-key
+      mountPath: /usr/local/share/sops/age
+
+  initContainers:
+    - name: install-sops-tools
+      image: alpine:3.21
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -e
+          echo "Installing SOPS v3.12.2..."
+          wget -qO /custom-tools/sops https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.linux.amd64
+          chmod +x /custom-tools/sops
+
+          echo "Installing age v1.2.1..."
+          wget -qO- https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-amd64.tar.gz | tar xz -C /tmp
+          mv /tmp/age/age /custom-tools/age
+          chmod +x /custom-tools/age
+
+          echo "Installing helm-secrets plugin..."
+          mkdir -p /custom-tools/helm-plugins
+          wget -qO- https://github.com/jkroepke/helm-secrets/releases/latest/download/helm-secrets.tar.gz | tar xz -C /custom-tools/helm-plugins
+
+          echo "All tools installed."
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+
+  # CMP sidecar — decrypts raw SOPS-encrypted manifests during sync
+  extraContainers:
+    - name: sops-plugin
+      command: ["/var/run/argocd/argocd-cmp-server"]
+      image: quay.io/argoproj/argocd:v3.3.9
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+      env:
+        - name: SOPS_AGE_KEY_FILE
+          value: /usr/local/share/sops/age/keys.txt
+      volumeMounts:
+        - name: var-files
+          mountPath: /var/run/argocd
+        - name: plugins
+          mountPath: /home/argocd/cmp-server/plugins
+        - name: custom-tools
+          mountPath: /custom-tools
+        - name: sops-age-key
+          mountPath: /usr/local/share/sops/age
+        - name: cmp-plugin
+          mountPath: /home/argocd/cmp-server/config
+        - name: cmp-tmp
+          mountPath: /tmp
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+
+# ---------- Disable unused components to save resources ----------
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+applicationSet:
+  enabled: false
