@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digimon-fleet-manager
+  namespace: digimon
+  labels:
+    app: digimon-fleet-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: digimon-fleet-manager
+  template:
+    metadata:
+      labels:
+        app: digimon-fleet-manager
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: fleet-manager
+          # TODO: Switch back to forgejo.lab.local/casey/digimon-fleet:v1
+          # once Talos nodes are configured to trust the self-signed cert
+          image: ttl.sh/casey-digimon-fleet-v1:24h
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: data-storage
+              mountPath: /data
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: fleet-data-pvc
