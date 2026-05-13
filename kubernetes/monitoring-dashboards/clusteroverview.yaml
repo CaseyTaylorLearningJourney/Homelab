@@ -13,7 +13,7 @@ data:
       "graphTooltip": 1,
       "panels": [
         {
-          "title": "CPU Utilisation",
+          "title": "CPU Utilization",
           "type": "stat",
           "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
           "targets": [{"expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "refId": "A"}],
@@ -34,7 +34,7 @@ data:
           "fieldConfig": {"defaults": {"unit": "percentunit", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}}
         },
         {
-          "title": "Memory Utilisation",
+          "title": "Memory Utilization",
           "type": "stat",
           "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
           "targets": [{"expr": "1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes)", "refId": "A"}],
@@ -55,7 +55,7 @@ data:
           "fieldConfig": {"defaults": {"unit": "percentunit", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}}
         },
         {
-          "title": "Disk Utilisation",
+          "title": "Disk Utilization",
           "type": "stat",
           "gridPos": {"h": 4, "w": 4, "x": 0, "y": 4},
           "targets": [{"expr": "1 - (sum(node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs\",mountpoint=~\"/|/var\"}) / sum(node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs\",mountpoint=~\"/|/var\"}))", "refId": "A"}],
@@ -76,42 +76,42 @@ data:
           "fieldConfig": {"defaults": {"unit": "bytes", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}}
         },
         {
-          "title": "PVC Utilisation",
+          "title": "PVC Count",
           "type": "stat",
           "gridPos": {"h": 4, "w": 4, "x": 12, "y": 4},
-          "targets": [{"expr": "sum(kubelet_volume_stats_used_bytes) / sum(kubelet_volume_stats_capacity_bytes)", "refId": "A"}],
-          "fieldConfig": {"defaults": {"unit": "percentunit", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.85}]}}}
+          "targets": [{"expr": "count(kube_persistentvolumeclaim_info)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "blue", "value": null}]}}}
         },
         {
-          "title": "PVC Used",
+          "title": "PV Total Capacity",
           "type": "stat",
           "gridPos": {"h": 4, "w": 4, "x": 16, "y": 4},
-          "targets": [{"expr": "sum(kubelet_volume_stats_used_bytes)", "refId": "A"}],
-          "fieldConfig": {"defaults": {"unit": "bytes", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}}
+          "targets": [{"expr": "sum(kube_persistentvolume_capacity_bytes)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "bytes", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "blue", "value": null}]}}}
         },
         {
-          "title": "PVC Total Provisioned",
+          "title": "PVC Requested Storage",
           "type": "stat",
           "gridPos": {"h": 4, "w": 4, "x": 20, "y": 4},
-          "targets": [{"expr": "sum(kubelet_volume_stats_capacity_bytes)", "refId": "A"}],
-          "fieldConfig": {"defaults": {"unit": "bytes", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green", "value": null}]}}}
+          "targets": [{"expr": "sum(kube_persistentvolumeclaim_resource_requests_storage_bytes)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "bytes", "color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "blue", "value": null}]}}}
         },
         {
-          "title": "CPU Usage",
+          "title": "CPU Usage by Namespace",
           "type": "timeseries",
           "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
-          "targets": [{"expr": "sum(namespace_cpu:kube_pod_container_resource_requests:sum{}) by (namespace)", "legendFormat": "{{namespace}} requests", "refId": "A"}, {"expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (namespace)", "legendFormat": "{{namespace}} usage", "refId": "B"}],
+          "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (namespace)", "legendFormat": "{{namespace}}", "refId": "A"}],
           "fieldConfig": {"defaults": {"unit": "short", "custom": {"fillOpacity": 10, "lineWidth": 1, "showPoints": "never"}}}
         },
         {
-          "title": "Memory Usage",
+          "title": "Memory Usage by Namespace",
           "type": "timeseries",
           "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
-          "targets": [{"expr": "sum(namespace_memory:kube_pod_container_resource_requests:sum{}) by (namespace)", "legendFormat": "{{namespace}} requests", "refId": "A"}, {"expr": "sum(container_memory_working_set_bytes{container!=\"\"}) by (namespace)", "legendFormat": "{{namespace}} usage", "refId": "B"}],
+          "targets": [{"expr": "sum(container_memory_working_set_bytes{container!=\"\"}) by (namespace)", "legendFormat": "{{namespace}}", "refId": "A"}],
           "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"fillOpacity": 10, "lineWidth": 1, "showPoints": "never"}}}
         },
         {
-          "title": "Disk Usage per Node",
+          "title": "Disk Usage % per Node",
           "type": "timeseries",
           "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
           "targets": [{"expr": "(1 - node_filesystem_avail_bytes{fstype=~\"ext4|xfs|btrfs\",mountpoint=~\"/|/var\"} / node_filesystem_size_bytes{fstype=~\"ext4|xfs|btrfs\",mountpoint=~\"/|/var\"}) * 100", "legendFormat": "{{instance}}", "refId": "A"}],

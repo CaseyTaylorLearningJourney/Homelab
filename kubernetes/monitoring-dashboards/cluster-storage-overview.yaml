@@ -64,18 +64,17 @@ data:
           ]
         },
         {
-          "title": "PVC Usage",
+          "title": "PVC Overview",
           "type": "table",
           "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
           "targets": [
-            {"expr": "kubelet_volume_stats_capacity_bytes", "refId": "A", "format": "table", "instant": true},
-            {"expr": "kubelet_volume_stats_used_bytes", "refId": "B", "format": "table", "instant": true},
-            {"expr": "kubelet_volume_stats_available_bytes", "refId": "C", "format": "table", "instant": true}
+            {"expr": "kube_persistentvolumeclaim_resource_requests_storage_bytes", "refId": "A", "format": "table", "instant": true},
+            {"expr": "kube_persistentvolumeclaim_status_phase == 1", "refId": "B", "format": "table", "instant": true}
           ],
           "fieldConfig": {"defaults": {"unit": "bytes"}},
           "transformations": [
             {"id": "merge"},
-            {"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "job": true, "metrics_path": true, "service": true, "endpoint": true, "container": true, "instance": true, "node": true}, "renameByName": {"namespace": "Namespace", "persistentvolumeclaim": "PVC", "Value #A": "Capacity", "Value #B": "Used", "Value #C": "Available"}}}
+            {"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "job": true, "uid": true, "instance": true, "endpoint": true, "service": true, "container": true, "Value #B": true}, "renameByName": {"namespace": "Namespace", "persistentvolumeclaim": "PVC", "storageclass": "Storage Class", "volumename": "Volume", "phase": "Phase", "Value #A": "Requested"}}}
           ]
         },
         {
