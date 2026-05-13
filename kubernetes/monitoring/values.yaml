@@ -1,0 +1,178 @@
+# kube-prometheus-stack Helm values
+# Tailored for Talos Kubernetes homelab cluster (3-core / 6GB RAM worker nodes)
+# Chart: prometheus-community/kube-prometheus-stack
+# Namespace: monitoring
+
+# ---------- Prometheus ----------
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned-issuer
+    hosts:
+      - prometheus.lab.local
+    paths:
+      - /
+    tls:
+      - secretName: prometheus-tls
+        hosts:
+          - prometheus.lab.local
+
+  prometheusSpec:
+    retention: 15d
+    retentionSize: "9GB"
+
+    # Scrape all ServiceMonitors/PodMonitors/PrometheusRules regardless of labels
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+# ---------- Grafana ----------
+grafana:
+  enabled: true
+
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned-issuer
+    hosts:
+      - grafana.lab.local
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.lab.local
+
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    size: 2Gi
+
+  # Enable all default dashboards (cluster, node, pod, PV, networking, etc.)
+  defaultDashboardsEnabled: true
+  defaultDashboardsTimezone: browser
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ---------- Alertmanager ----------
+alertmanager:
+  enabled: true
+
+  ingress:
+    enabled: false  # Enable later if direct access needed
+
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+  # No receivers configured yet — add email/Slack/webhook later
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: "null"
+      group_by: ["alertname", "namespace"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+    receivers:
+      - name: "null"
+
+# ---------- Node Exporter ----------
+# Provides per-node metrics: CPU, RAM, disk I/O, filesystem usage, network
+prometheus-node-exporter:
+  tolerations:
+    - operator: Exists      # Run on ALL nodes including control-plane
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
+
+# ---------- kube-state-metrics ----------
+# Provides cluster-level object metrics: pods, deployments, PVCs, nodes, etc.
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ---------- Prometheus Operator ----------
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+# ---------- Component scraping ----------
+# Talos manages these components internally; disable to avoid noisy alerts
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+# ---------- Default alerting rules ----------
+defaultRules:
+  create: true
+  rules:
+    etcd: false              # Talos manages etcd; rules generate false positives
+    kubeProxy: false         # Disabled above
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
