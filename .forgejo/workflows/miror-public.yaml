@@ -1,0 +1,139 @@
+name: Mirror to Public Repos (Sanitized)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sanitize-and-mirror:
+    runs-on: ubuntu-latest
+    env:
+      GIT_SSL_NO_VERIFY: "true"
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone target repo (preserve existing content)
+        run: |
+          git clone https://casey:${{ secrets.MIRROR_TOKEN_FORGEJO }}@forgejo.lab.local/casey/HomeLab.git /tmp/target
+          # Save existing non-gitops content
+          cd /tmp/target
+          # Store list of existing files for reference
+          find . -not -path './.git/*' -not -name '.git' -type f > /tmp/existing-files.txt
+
+      - name: Capture source commit messages
+        run: |
+          # Get commit messages from the push that triggered this workflow
+          # Use the before/after SHAs from the push event
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # Initial push — just use the latest commit
+            git log -1 --format="%s" > /tmp/commit-messages.txt
+          else
+            git log --format="%s" "${BEFORE}..${AFTER}" > /tmp/commit-messages.txt
+          fi
+          echo "=== Source commit messages ==="
+          cat /tmp/commit-messages.txt
+
+      - name: Remove sensitive files from source
+        run: |
+          SANITIZED=false
+
+          # Remove SOPS config
+          if [ -f .sops.yaml ]; then
+            rm -f .sops.yaml
+            SANITIZED=true
+          fi
+
+          # Remove all encrypted secret files
+          ENC_COUNT=$(find . -name '*.enc.yaml' -type f | wc -l)
+          if [ "$ENC_COUNT" -gt 0 ]; then
+            find . -name '*.enc.yaml' -type f -delete
+            SANITIZED=true
+          fi
+
+          # Remove empty secrets directories left behind
+          find . -type d -name secrets -empty -delete
+
+          echo "SANITIZED_FILES=$SANITIZED" >> "$GITHUB_ENV"
+
+      - name: Redact internal IPs
+        run: |
+          REDACTED=false
+          # Replace all 192.168.50.x IPs with <REDACTED>
+          find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' \) | while read f; do
+            if grep -q '192\.168\.50\.[0-9]\{1,3\}' "$f"; then
+              sed -i 's/192\.168\.50\.[0-9]\{1,3\}/<REDACTED>/g' "$f"
+              echo "true" > /tmp/redacted-flag
+            fi
+          done
+          if [ -f /tmp/redacted-flag ]; then
+            REDACTED=true
+          fi
+          echo "REDACTED_IPS=$REDACTED" >> "$GITHUB_ENV"
+
+      - name: Remove Forgejo workflow from public copy
+        run: |
+          REMOVED_WORKFLOW=false
+          # Remove Forgejo-specific workflow (not needed in public repo)
+          if [ -f .forgejo/workflows/mirror-public.yaml ]; then
+            rm -rf .forgejo/workflows/mirror-public.yaml
+            REMOVED_WORKFLOW=true
+          fi
+          find .forgejo -type d -empty -delete 2>/dev/null || true
+          echo "REMOVED_WORKFLOW=$REMOVED_WORKFLOW" >> "$GITHUB_ENV"
+
+      - name: Overlay sanitized content onto target
+        run: |
+          # Copy sanitized gitops-infra content into target repo
+          # Exclude README.md and LICENSE to preserve the public repo's own versions
+          tar --exclude='.git' --exclude='README.md' --exclude='LICENSE' -cf - . | tar -xf - -C /tmp/target/
+
+      - name: Sync deletions for managed directories
+        run: |
+          # Remove files from target that were deleted from source
+          # Only applies to directories managed by gitops-infra
+          for dir in KubeCluster kubernetes; do
+            if [ -d "/tmp/target/$dir" ]; then
+              (cd /tmp/target && find "$dir" -type f) | while read f; do
+                if [ ! -f "./$f" ]; then
+                  rm -f "/tmp/target/$f"
+                  echo "Deleted: $f"
+                fi
+              done
+              # Clean up empty directories
+              find "/tmp/target/$dir" -type d -empty -delete 2>/dev/null || true
+            fi
+          done
+
+      - name: Push sanitized content to Forgejo HomeLab
+        run: |
+          cd /tmp/target
+          git config user.name "Forgejo Mirror Bot"
+          git config user.email "mirror@lab.local"
+          git add -A
+          git diff --cached --quiet && echo "No changes to mirror" && exit 0
+
+          # Build commit message with original commit messages
+          MESSAGES=$(cat /tmp/commit-messages.txt)
+          MSG_COUNT=$(echo "$MESSAGES" | wc -l | tr -d ' ')
+
+          if [ "$MSG_COUNT" -eq 1 ]; then
+            echo "$MESSAGES" > /tmp/commit-msg.txt
+          else
+            echo "mirror: ${MSG_COUNT} commits from gitops-infra" > /tmp/commit-msg.txt
+            echo "" >> /tmp/commit-msg.txt
+            echo "$MESSAGES" | sed 's/^/- /' >> /tmp/commit-msg.txt
+          fi
+
+          # Append sanitization note only if something was actually sanitized
+          if [ "$SANITIZED_FILES" = "true" ] || [ "$REDACTED_IPS" = "true" ] || [ "$REMOVED_WORKFLOW" = "true" ]; then
+            echo "" >> /tmp/commit-msg.txt
+            echo "[sanitized: secrets/IPs redacted for public mirror]" >> /tmp/commit-msg.txt
+          fi
+
+          git commit -F /tmp/commit-msg.txt
+          git push origin Development
